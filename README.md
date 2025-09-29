@@ -25,4 +25,4 @@ Este projeto estima os impactos econômicos da produção de petróleo na Margem
 
 ## ✍️ Autor
 
-Carlos Sena • [LinkedIn](https://linkedin.com/in/carlos-sena-0776381a5)
+© Carlos Sena — Economista | XP Investimentos
