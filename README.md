@@ -1,5 +1,3 @@
-# Margem_Equatorial
-
 # Impacto Econômico da Margem Equatorial
 
 Este projeto estima os impactos econômicos da produção de petróleo na Margem Equatorial (Amapá, Pará, Maranhão, Ceará, Rio Grande do Norte) entre 2026 e 2030. A análise é feita com base em:
