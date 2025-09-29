@@ -14,9 +14,9 @@ library(data.table)
 library(broom)
 
 # ---- Preparação da base ---------------------------------------------------------
-df <- read_excel("C:/Users/carlo/OneDrive/Área de Trabalho/Phillips/margem/Margem_Equatorial.xlsx")
+dados <- read_excel("C:/Users/carlo/OneDrive/Área de Trabalho/Phillips/margem/Margem_Equatorial.xlsx")
 
-df %>% 
+dados %>% 
   rename(
     pib_nominal   = "Tabela 5938 - Produto interno bruto a preços correntes",
     emprego_formal= "estoque_medio_de_emprego_formal_caged",
@@ -32,9 +32,9 @@ df %>%
     ano = as.integer(ano),
     across(c(tratado, controle, fase_exploratoria, fase_desenvolvimento, fase_producao),
            ~ as.integer(.x))
-  ) -> df
+  ) -> dados
 
-base <- df %>%
+dados %>%
   clean_names() %>%
   mutate(
     estado    = as.factor(estado),
@@ -49,34 +49,35 @@ base <- df %>%
     selic     = selic,
     infl      = ipca
   ) %>%
-  arrange(estado, ano)
+  arrange(estado, ano) -> dados_ajustados
 
 # ---- Coorte g robusta (sem warnings/Inf)
-coortes <- base %>%
+coortes <- dados_ajustados %>%
   group_by(estado) %>%
   summarise(
     g = if (any(fase_producao == 1, na.rm = TRUE)) min(ano[fase_producao == 1], na.rm = TRUE) else NA_integer_,
     .groups = "drop"
   )
 
-base <- base %>% left_join(coortes, by = "estado")
+dados_ajustados %>% 
+  left_join(coortes, by = "estado") -> dados_ajustados
 
 # ---- Modelo econométrico (event-study) --------------------------------------------------
 es_pib <- feols(
   ln_pib_pc ~ sunab(g, ano) + brent + fx + selic + infl | estado,
-  data = base, cluster = ~estado
+  data = dados_ajustados, cluster = ~estado
 )
 
 es_emp <- feols(
   ln_emprego ~ sunab(g, ano) + brent + fx + selic + infl | estado,
-  data = base, cluster = ~estado
+  data = dados_ajustados, cluster = ~estado
 )
 
 # ---- Validação e projeção --------------------------------------------------
 wald(es_pib, c("ano::-4", "ano::-3", "ano::-2"))
 coef(es_pib)[grep("ano::[1-9]", names(coef(es_pib)))]
 
-ref_pib_estado <- base %>%
+ref_pib_estado <- dados_ajustados %>%
   group_by(estado) %>%
   filter(!is.na(pib_pc)) %>%
   slice_max(ano) %>%
@@ -103,7 +104,7 @@ proj_emp <- tibble(
   emprego_proj = emprego_proj
 )
 
-ref_emp_estado <- base %>%
+ref_emp_estado <- dados_ajustados %>%
   group_by(estado) %>%
   filter(!is.na(emprego_formal)) %>%
   slice_max(ano) %>%
@@ -142,7 +143,7 @@ mult_df_p <- as_tibble(mult_mat_p) %>%
   mutate(ano_rel = as.integer(ano_rel_chr)) %>%
   select(sim, ano_rel, mult)
 
-ref_pib_estado <- base %>%
+ref_pib_estado <- dados_ajustados %>%
   group_by(estado) %>%
   filter(!is.na(pib_pc)) %>%
   slice_max(ano, n = 1, with_ties = FALSE) %>%
@@ -189,7 +190,7 @@ V_e_full   <- vcov(es_emp)
 V_e        <- V_e_full[post_long_e, post_long_e, drop = FALSE]
 diag(V_e)  <- diag(V_e) + 1e-10
 
-ref_emp_estado <- base %>%
+ref_emp_estado <- dados_ajustados %>%
   group_by(estado) %>%
   filter(!is.na(emprego_formal)) %>%
   slice_max(ano) %>%
