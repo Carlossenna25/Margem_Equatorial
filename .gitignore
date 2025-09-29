@@ -1,1 +1,6 @@
-
+.Rhistory
+.Rproj.user
+.RData
+.Ruserdata
+outputs/*.xlsx
+data/*.xlsx
