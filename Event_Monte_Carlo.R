@@ -136,10 +136,10 @@ betas_draw_p <- rmvnorm(S, mean = as.numeric(P$b), sigma = P$V)
 mult_mat_p <- t(apply(betas_draw_p, 1, function(b) exp(cumsum(b)))) 
 colnames(mult_mat_p) <- as.character(1:5)
 
-mult_df_p <- as_tibble(mult_mat_p) |>
-  mutate(sim = row_number()) |>
-  pivot_longer(-sim, names_to = "ano_rel_chr", values_to = "mult") |>
-  mutate(ano_rel = as.integer(ano_rel_chr)) |>
+mult_df_p <- as_tibble(mult_mat_p) %>%
+  mutate(sim = row_number()) %>%
+  pivot_longer(-sim, names_to = "ano_rel_chr", values_to = "mult") %>%
+  mutate(ano_rel = as.integer(ano_rel_chr)) %>%
   select(sim, ano_rel, mult)
 
 ref_pib_estado <- base %>%
@@ -150,17 +150,17 @@ ref_pib_estado <- base %>%
   transmute(estado, pib0 = pib_pc)
 
 anos_proj <- 2026:2030
-mc_pib <- ref_pib_estado |>
-  tidyr::crossing(sim = unique(mult_df_p$sim), ano = anos_proj) |>
-  mutate(ano_rel = ano - 2025L) |>
-  left_join(mult_df_p, by = c("sim", "ano_rel")) |>
-  group_by(estado, sim) |>
-  arrange(ano, .by_group = TRUE) |>
-  mutate(pib_pc_proj = first(pib0) * mult) |>
+mc_pib <- ref_pib_estado %>%
+  tidyr::crossing(sim = unique(mult_df_p$sim), ano = anos_proj) %>%
+  mutate(ano_rel = ano - 2025L) %>%
+  left_join(mult_df_p, by = c("sim", "ano_rel")) %>%
+  group_by(estado, sim) %>%
+  arrange(ano, .by_group = TRUE) %>%
+  mutate(pib_pc_proj = first(pib0) * mult) %>%
   ungroup()
 
-sum_pib <- mc_pib |>
-  group_by(estado, ano) |>
+sum_pib <- mc_pib %>%
+  group_by(estado, ano) %>%
   summarise(
     mean = mean(pib_pc_proj, na.rm = TRUE),
     p05  = quantile(pib_pc_proj, 0.05, na.rm = TRUE),
@@ -203,24 +203,24 @@ betas_draw_e <- mvtnorm::rmvnorm(S, mean = beta_hat_e, sigma = V_e)
 mult_mat_e <- t(apply(betas_draw_e, 1, function(b) exp(cumsum(b))))
 colnames(mult_mat_e) <- as.character(seq_len(ncol(mult_mat_e)))
 
-mult_df_e <- as_tibble(mult_mat_e) |>
-  mutate(sim = row_number()) |>
-  pivot_longer(cols = -sim, names_to = "ano_rel_chr", values_to = "mult") |>
-  mutate(ano_rel = as.integer(ano_rel_chr)) |>
+mult_df_e <- as_tibble(mult_mat_e) %>%
+  mutate(sim = row_number()) %>%
+  pivot_longer(cols = -sim, names_to = "ano_rel_chr", values_to = "mult") %>%
+  mutate(ano_rel = as.integer(ano_rel_chr)) %>%
   select(sim, ano_rel, mult)
 
 anos <- 2026:2030
 k <- ncol(mult_mat_e)  
 anos_emp <- anos[seq_len(k)]
 
-mc_emp <- ref_emp_estado |>
-  tidyr::crossing(sim = unique(mult_df_e$sim), ano = anos_emp) |>
-  mutate(ano_rel = ano - min(anos_emp) + 1L) |>
-  left_join(mult_df_e, by = c("sim","ano_rel")) |>
+mc_emp <- ref_emp_estado %>%
+  tidyr::crossing(sim = unique(mult_df_e$sim), ano = anos_emp) %>%
+  mutate(ano_rel = ano - min(anos_emp) + 1L) %>%
+  left_join(mult_df_e, by = c("sim","ano_rel")) %>%
   mutate(emp_proj = emp_ref * mult)
 
-sum_emp <- mc_emp |>
-  group_by(estado, ano) |>
+sum_emp <- mc_emp %>%
+  group_by(estado, ano) %>%
   summarise(
     mean = mean(emp_proj, na.rm = TRUE),
     p05  = quantile(emp_proj, 0.05, na.rm = TRUE),
